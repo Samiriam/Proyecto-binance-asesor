@@ -1,246 +1,394 @@
 # Binance Advisor - Asesor de Inversiones Binance
 
-Proyecto de asesor financiero para Binance con Next.js, Vercel y GUI.
+Asistente de inversiones inteligente para Binance con análisis de productos Simple Earn y Dual Investment.
 
-## Características
+## 🎯 Finalidad
 
-- **Spot balances**: Consulta de saldos en spot
-- **Precios + variación 24h**: Datos de mercado en tiempo real
-- **Simple Earn Flexible + Locked**: Productos de ahorro flexible y bloqueado
-- **Dual Investment**: Catálogo de productos de inversión dual
-- **1 recomendación accionable por corrida**: Sin auto-trade, solo sugerencias
-- **Scheduler diario con Vercel Cron**: Ejecución automática diaria
-- **Auditoría + notificaciones**: Registro histórico y alertas
+Este proyecto es un asistente de inversiones que te ayuda a **optimizar tus rendimientos en Binance** analizando:
 
-## Stack Tecnológico
+- **Saldo Spot**: Balances disponibles en tu cuenta
+- **Precios 24h**: Variación de precios de criptomonedas
+- **Simple Earn Flexible**: Productos de bajo riesgo con retiro flexible
+- **Simple Earn Locked**: Productos con mayor rendimiento pero plazo fijo
+- **Dual Investment**: Oportunidades de alto rendimiento con riesgo de conversión
 
-- **Next.js (App Router)** + TypeScript
-- **Tailwind CSS** para la interfaz de usuario
-- **Postgres** (Neon o Supabase) para persistencia
-- **Email** (Resend) o Telegram opcional para notificaciones
+### ¿Qué hace el asesor?
 
-## Estructura del Proyecto
+1. **Analiza tu portafolio** actual en Binance
+2. **Compara oportunidades** de Simple Earn y Dual Investment
+3. **Genera una recomendación diaria** basada en análisis cuantitativo
+4. **Te protege de riesgos** con guardias de volatilidad
+5. **Te muestra visualmente** tus saldos y las mejores oportunidades
+
+### ¿Qué NO hace?
+
+- ❌ NO ejecuta operaciones automáticamente (solo recomienda)
+- ❌ NO garantiza rendimientos futuros
+- ❌ NO constituye asesoramiento financiero profesional
+
+## 🏗️ Arquitectura
 
 ```
-binance-advisor/
-  app/
-    layout.tsx
-    page.tsx
-    dashboard/
-      page.tsx
-      components/
-  app/api/
-    recommend/route.ts
-    cron/daily/route.ts
-    binance/
-  lib/
-    binance/
-    brain/
-    db/
-    config.ts
-  public/
-  vercel.json
-  package.json
-  tsconfig.json
-  .env.example
-  README.md
+Proyecto-binance-asesor/
+├── app/                          # Next.js App Router
+│   ├── api/                      # API Routes
+│   │   ├── binance/              # Binance API endpoints
+│   │   │   ├── account/route.ts  # GET /api/binance/account
+│   │   │   ├── ticker24h/route.ts # GET /api/binance/ticker24h
+│   │   │   ├── time/route.ts     # GET /api/binance/time (debug)
+│   │   │   ├── earn/             # Simple Earn endpoints
+│   │   │   │   ├── flexible/route.ts
+│   │   │   │   └── locked/route.ts
+│   │   │   └── dual/             # Dual Investment endpoints
+│   │   │       └── list/route.ts
+│   │   ├── recommend/route.ts    # POST /api/recommend (main logic)
+│   │   └── cron/daily/route.ts   # Cron job endpoint
+│   ├── dashboard/                # GUI Dashboard
+│   │   ├── page.tsx              # Main dashboard page
+│   │   └── components/           # React components
+│   │       ├── PortfolioSummary.tsx
+│   │       ├── PortfolioTable.tsx
+│   │       ├── FlexibleTop.tsx
+│   │       ├── DualTop.tsx
+│   │       ├── RecommendationBox.tsx
+│   │       ├── AdvisorLogic.tsx
+│   │       ├── AuditTable.tsx
+│   │       └── ConfigPanel.tsx
+│   ├── login/page.tsx            # Login page
+│   ├── layout.tsx                # Root layout
+│   └── globals.css               # Global styles
+├── lib/
+│   ├── binance/                  # Binance API client
+│   │   ├── client.ts             # API client with HMAC signing
+│   │   ├── sign.ts               # HMAC SHA256 hex signing
+│   │   └── normalize.ts          # Data normalization helpers
+│   ├── brain/                    # Decision logic
+│   │   ├── types.ts              # TypeScript types
+│   │   └── decision.ts           # Decision engine
+│   ├── db/                       # Database layer
+│   │   ├── index.ts              # DB client
+│   │   └── schema.sql            # SQL schema
+│   └── config.ts                 # Centralized configuration
+├── public/                       # Static assets
+├── vercel.json                   # Vercel Cron configuration
+├── tsconfig.json                 # TypeScript configuration
+├── tailwind.config.ts            # Tailwind CSS configuration
+├── package.json                  # Dependencies
+└── README.md                     # This file
 ```
 
-## Instalación Local
+## 🚀 Configuración Rápida
 
-1. **Clonar el repositorio**:
+### 1. Clonar el repositorio
+
 ```bash
 git clone https://github.com/Samiriam/Proyecto-binance-asesor.git
 cd Proyecto-binance-asesor
 ```
 
-2. **Instalar dependencias**:
+### 2. Instalar dependencias
+
 ```bash
 npm install
-# o
-pnpm install
 ```
 
-3. **Configurar variables de entorno**:
-```bash
-cp .env.example .env.local
-```
+### 3. Configurar variables de entorno
 
-Edita `.env.local` con tus credenciales de Binance:
+Crea un archivo `.env.local` con tus credenciales:
+
 ```bash
+# Binance
+BINANCE_BASE_URL=https://api.binance.com
 BINANCE_API_KEY=tu_api_key
 BINANCE_API_SECRET=tu_api_secret
-APP_ADMIN_USER=admin
-APP_ADMIN_PASS=tu_contraseña_segura
-DATABASE_URL=tu_url_postgres
-CRON_SECRET=tu_secreto_cron
+BINANCE_RECV_WINDOW=5000
+
+# App security
+NEXT_PUBLIC_ADMIN_USER=admin
+NEXT_PUBLIC_ADMIN_PASS=admin123
+CRON_SECRET=tu_clave_secreta
+
+# Database (opcional - para auditoría)
+DATABASE_URL=postgresql://user:pass@host:5432/dbname
+
+# Notificaciones (opcional)
+RESEND_API_KEY=tu_clave_resend
+ALERT_EMAIL_TO=tu@email.com
+TELEGRAM_BOT_TOKEN=tu_token_bot
+TELEGRAM_CHAT_ID=tu_chat_id
 ```
 
-4. **Ejecutar en desarrollo**:
+### 4. Ejecutar en desarrollo
+
 ```bash
 npm run dev
-# o
-pnpm dev
 ```
 
-## Validación y Smoke Test
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
-### 1. Validación Básica (sin Binance)
+## 📊 API Endpoints
 
-1. Abre: `http://localhost:3000/login`
-2. Entra con `APP_ADMIN_USER / APP_ADMIN_PASS`
-3. Debe redirigir a `/dashboard`
-4. Si abres `/dashboard` sin login, **debe bloquearte** (middleware OK).
+### Binance API
 
-### 2. Validación Binance (firmado y permisos)
+- `GET /api/binance/account` - Obtener información de la cuenta y saldos
+- `GET /api/binance/ticker24h` - Obtener variación 24h de precios
+- `GET /api/binance/time` - Validar timestamp del servidor (debug)
+- `GET /api/binance/earn/flexible` - Productos Simple Earn Flexible
+- `GET /api/binance/earn/locked` - Productos Simple Earn Locked
+- `GET /api/binance/dual/list` - Catálogo Dual Investment
 
-#### 2.1 Prueba "public" primero
-```bash
-curl http://localhost:3000/api/binance/ticker24h
+### Recommendation API
+
+- `POST /api/recommend` - Generar recomendación
+
+**Ejemplo de respuesta:**
+
+```json
+{
+  "generated_at": "2024-01-15T10:30:00.000Z",
+  "portfolio_summary": {
+    "focus_asset": "USDT",
+    "focus_total": 1000.0,
+    "focus_flexible_apr": 5.5
+  },
+  "topFlexible": [
+    {
+      "asset": "USDC",
+      "apr": 6.2,
+      "min": 10,
+      "quota": 1000000,
+      "reason": "Stablecoin con APR competitivo"
+    }
+  ],
+  "topDual": [
+    {
+      "base": "USDT",
+      "quote": "BTC",
+      "apy": 12.5,
+      "strike": 50000,
+      "worst_case": "Podrías liquidar en BTC al strike 50000 (riesgo conversión).",
+      "reason": "Retorno potencial mayor con riesgo de conversión"
+    }
+  ],
+  "recommendation": {
+    "type": "FLEXIBLE_SWITCH",
+    "asset": "USDC",
+    "amount_suggested": 1000.0,
+    "duration_days": 30,
+    "reason": "Switch USDT → USDC. APR +0.7pp (de 5.5% a 6.2%)."
+  }
+}
 ```
-Debe responder JSON grande (ok).
 
-#### 2.2 Prueba "signed" mínima (Spot)
+### Cron Job
+
+- `POST /api/cron/daily` - Ejecutar recomendación diaria (requiere `CRON_SECRET`)
+
+## 🧠 Lógica del Asesor
+
+### Decision Engine
+
+El asesor utiliza la siguiente lógica para generar recomendaciones:
+
+1. **Análisis de Portafolio**: Identifica el activo principal (mayor saldo) y calcula el APR actual
+2. **Comparación de Oportunidades**: Analiza los mejores productos Flexible y Dual disponibles
+3. **Guardia de Volatilidad**: Si el activo principal tiene volatilidad 24h > 5%, recomienda NO ACCIÓN
+4. **Recomendación**: Genera una recomendación basada en análisis cuantitativo
+
+### Tipos de Recomendaciones
+
+| Tipo | Descripción | Cuándo se recomienda |
+|------|-------------|---------------------|
+| **FLEXIBLE_STAY** | Mantener activo actual en Flexible | Ya estás en la mejor opción o mejora insuficiente |
+| **FLEXIBLE_SWITCH** | Cambiar a otra stablecoin Flexible | Requiere mejora ≥ 0.5 puntos porcentuales |
+| **DUAL_SUGGEST** | Considerar Dual Investment | Diferencial ≥ 3pp y máximo 30% del saldo |
+| **NO_ACTION** | No se recomienda acción | Volatilidad alta, datos insuficientes o sin ventaja clara |
+
+### Umbrales de Decisión
+
+- **Volatilidad 24h**: Bloquea recomendaciones si > 5%
+- **Switch Flexible**: Requiere mejora de 0.5 puntos porcentuales (pp)
+- **Dual Investment**: Solo si diferencial ≥ 3pp y máximo 30% del saldo
+- **Stablecoins prioritarias**: USDT, USDC, BUSD, DAI, TUSD
+
+## 🎨 GUI Dashboard
+
+El dashboard incluye:
+
+- **Login**: Autenticación simple con usuario/contraseña
+- **Dashboard**: Panel principal con recomendaciones
+- **Portafolio**: Visualización completa de tus saldos en Binance
+- **Lógica del Asesor**: Explicación detallada de cómo funciona el sistema
+
+### Componentes
+
+- **Portfolio Summary**: Resumen del portafolio actual
+- **Portfolio Table**: Tabla completa con todos tus saldos
+- **Recommendation Box**: Recomendación principal con detalles
+- **Flexible Top**: Top 3 productos Simple Earn Flexible
+- **Dual Top**: Top 3 productos Dual Investment
+- **Advisor Logic**: Explicación de la lógica del asesor
+- **Audit Table**: Historial de recomendaciones
+- **Config Panel**: Configuración del asesor
+
+## 📅 Vercel Cron
+
+El proyecto está configurado para ejecutar una recomendación diaria a las 12:00 UTC (09:00 Chile) usando Vercel Cron Jobs.
+
+### Configuración en `vercel.json`
+
+```json
+{
+  "crons": [
+    {
+      "path": "/api/cron/daily",
+      "schedule": "0 12 * * *"
+    }
+  ]
+}
+```
+
+### Variables de Entorno en Vercel
+
+Asegúrate de configurar las siguientes variables en el dashboard de Vercel:
+
+- `BINANCE_API_KEY`
+- `BINANCE_API_SECRET`
+- `NEXT_PUBLIC_ADMIN_USER`
+- `NEXT_PUBLIC_ADMIN_PASS`
+- `CRON_SECRET`
+
+## 🔒 Seguridad
+
+- Las credenciales de Binance se almacenan en variables de entorno
+- Las llamadas a la API de Binance se firman con HMAC SHA256
+- El cron job está protegido con `CRON_SECRET`
+- No se ejecutan operaciones automáticamente (solo recomendaciones)
+
+## 🚨 Importante
+
+Este asistente proporciona **recomendaciones informativas** y **NO ejecuta operaciones automáticamente**. Siempre revisa las recomendaciones y toma tus propias decisiones de inversión.
+
+Las inversiones en criptomonedas conllevan riesgos significativos. Este proyecto no constituye asesoramiento financiero.
+
+## 📝 Validación
+
+Antes de desplegar, valida que todo funcione correctamente:
+
+### 1. Validar conexión con Binance API
+
 ```bash
 curl http://localhost:3000/api/binance/account
 ```
-Si falla:
-- `-2015` suele ser permisos/clave inválida o restricciones IP.
-- `-1021` suele ser timestamp (reloj desfasado).
 
-#### 2.3 Validar timestamp (opcional)
-```bash
-curl http://localhost:3000/api/binance/time
-```
-Compara `serverTime` vs `localTime`. Si hay diferencia grande, ajusta `BINANCE_RECV_WINDOW`.
+Deberías ver tu información de cuenta.
 
-#### 2.4 Earn y Dual
-```bash
-curl http://localhost:3000/api/binance/earn/flexible
-curl http://localhost:3000/api/binance/earn/locked
-curl http://localhost:3000/api/binance/dual/list
-```
-Si estos devuelven vacío o error, puede ser que tu cuenta/región no tenga esos productos habilitados.
-
-### 3. Recomendación End-to-End
+### 2. Validar generación de recomendación
 
 ```bash
 curl -X POST http://localhost:3000/api/recommend
 ```
 
-Criterios de OK:
-- Responde **1** `recommendation.type`
-- Trae `topFlexible[]` (si Earn disponible)
-- Trae `topDual[]` (si Dual disponible)
-- Incluye `generated_at`
+Deberías ver una recomendación completa.
 
-### 4. Probar Endpoints
-
-- `GET /api/binance/ticker24h` - Precios 24h
-- `GET /api/binance/account` - Cuenta Binance
-- `GET /api/binance/time` - Validar timestamp
-- `POST /api/recommend` - Generar recomendación
-
-## Despliegue en Vercel
-
-1. **Subir el repositorio a GitHub**
-
-2. **Importar en Vercel**:
-   - Ve a [vercel.com](https://vercel.com)
-   - Importa el repositorio
-   - Configura las **Environment Variables**
-   - Deploy
-
-3. **Configurar Cron Jobs**:
-   - El archivo `vercel.json` ya incluye la configuración
-   - El cron se ejecuta diariamente a las 12:00 UTC
-
-4. **Probar cron manualmente**:
-```bash
-curl -X POST https://tu-app.vercel.app/api/cron/daily \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer TU_CRON_SECRET"
-```
-
-## Configuración de Base de Datos
-
-### Opción 1: Postgres (Neon o Supabase)
+### 3. Validar endpoint de tiempo (debugging)
 
 ```bash
-# Neon
-DATABASE_URL=postgresql://usuario:password@ep-nombre.region.aws.neon.tech/neondb?sslmode=require
-
-# Supabase
-DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres
+curl http://localhost:3000/api/binance/time
 ```
 
-### Opción 2: Vercel KV (Redis)
+Deberías ver la hora actual del servidor.
+
+## 🔧 Troubleshooting
+
+### Error: "Binance API Error 401"
+
+- Verifica que `BINANCE_API_KEY` y `BINANCE_API_SECRET` sean correctos
+- Asegúrate de que la API key tenga los permisos necesarios
+
+### Error: "Binance API Error 1021"
+
+- Verifica la sincronización de tiempo del servidor
+- Aumenta `BINANCE_RECV_WINDOW` si hay latencia
+
+### Error: "No action recommendation"
+
+- Verifica que tengas saldos en tu cuenta
+- Asegúrate de que haya productos disponibles en Simple Earn
+- Revisa los umbrales de decisión en `lib/config.ts`
+
+### Error en Vercel: "Type error"
+
+- Verifica que `tsconfig.json` tenga `"target": "ES2020"`
+- Ejecuta `npm run build` localmente para verificar errores
+
+### Error: "Credenciales inválidas"
+
+- Verifica que `NEXT_PUBLIC_ADMIN_USER` y `NEXT_PUBLIC_ADMIN_PASS` estén configurados
+- Asegúrate de que las variables tengan el prefijo `NEXT_PUBLIC_`
+
+## 📦 Deploy en Vercel
+
+1. Importa el repositorio en [vercel.com](https://vercel.com)
+2. Configura las variables de entorno
+3. Deploy
+
+## 🔧 Qué Falta Implementar
+
+### Base de Datos (Supabase)
+
+Actualmente, el proyecto no tiene una base de datos persistente. Para implementar auditoría completa, puedes usar Supabase:
 
 ```bash
-# Instalar cliente
-npm install @vercel/kv
-
-# Usar en lugar de Postgres
+npm install @supabase/supabase-js
 ```
 
-## Seguridad
+**Configuración en `.env.local`:**
 
-- **Firma HMAC SHA256**: Todos los endpoints firmados usan autenticación HMAC
-- **Secrets**: Las credenciales nunca llegan al navegador
-- **Rate limit**: Simple Earn Flexible tiene peso alto (150), se ejecuta 1 vez al día
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-## Riesgos y Controles
+**Ejemplo de implementación:**
 
-- **Dual Investment**: Riesgo de conversión. Modo moderado (max 30% y solo si diferencial >= 3pp)
-- **Volatilidad**: Guardia de volatilidad 24h para activos no stable
-- **No auto-trade**: Solo recomendaciones, el usuario decide ejecutar
+```typescript
+// lib/db/supabase.ts
+import { createClient } from '@supabase/supabase-js'
 
-## Troubleshooting
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-### Errores Comunes de Binance
+export const supabase = createClient(supabaseUrl, supabaseKey)
+```
 
-| Código | Descripción | Solución |
-|--------|-------------|-----------|
-| `-2015` | API Key inválida o sin permisos | Verifica que la API Key tenga permisos de lectura y que no esté restringida por IP |
-| `-1021` | Timestamp fuera de ventana | Ejecuta `GET /api/binance/time` para verificar el desfase. Aumenta `BINANCE_RECV_WINDOW` (máximo 10000) |
-| `-1000` | Error desconocido | Verifica que los endpoints sean correctos para tu región |
-| `403` | IP no autorizada | Agrega tu IP a la whitelist en Binance |
+### Notificaciones (Telegram + Email)
 
-### Errores de Earn/Dual
+Para implementar notificaciones completas:
 
-Si `GET /api/binance/earn/flexible` o `GET /api/binance/dual/list` devuelven vacío:
-- Verifica que tu cuenta tenga acceso a Simple Earn y Dual Investment
-- Algunos productos no están disponibles en todas las regiones
-- El sistema degradará a `NO_ACTION` automáticamente
+**Telegram:**
+```bash
+npm install node-telegram-bot-api
+```
 
-### Caché en Vercel
+**Email (Resend):**
+```bash
+npm install resend
+```
 
-Los endpoints de Binance usan `cache: "no-store"` para evitar respuestas en caché. Si ves datos desactualizados:
-- Verifica que las variables de entorno estén configuradas en Vercel
-- Limpia el caché de Vercel si es necesario
+### Funcionalidades Futuras
 
-## Endpoints API
+- [ ] Gráficos de rendimiento histórico
+- [ ] Cálculo de valor total del portafolio en USDT
+- [ ] Configuración personalizable de umbrales
+- [ ] Alertas en tiempo real
+- [ ] Comparación de rendimientos
+- [ ] Exportación de reportes
 
-### Binance
-- `GET /api/binance/ticker24h` - Precios 24h
-- `GET /api/binance/account` - Cuenta y saldos
-- `GET /api/binance/time` - Validar timestamp (debugging)
-- `GET /api/binance/earn/flexible` - Simple Earn Flexible
-- `GET /api/binance/earn/locked` - Simple Earn Locked
-- `GET /api/binance/dual/list` - Dual Investment
-
-### Recomendación
-- `POST /api/recommend` - Generar recomendación completa
-
-### Cron
-- `POST /api/cron/daily` - Ejecución diaria (requiere auth)
-
-## Referencias
-
-- [Binance API Documentation](https://developers.binance.com/docs)
-- [Vercel Cron Jobs](https://vercel.com/docs/cron-jobs)
-- [Next.js App Router](https://nextjs.org/docs/app)
-
-## Licencia
+## 📄 Licencia
 
 MIT
+
+## 👨‍💻 Autor
+
+[Samiriam](https://github.com/Samiriam)

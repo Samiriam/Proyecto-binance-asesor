@@ -4,7 +4,7 @@ import { decide } from "@/lib/brain/decision";
 import { getConfig } from "@/lib/config";
 import { saveAudit } from "@/lib/db";
 
-// Verifica autenticaciÃ³n del cron
+// Verifica autenticación del cron
 function verifyCronAuth(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
@@ -24,7 +24,7 @@ function verifyCronAuth(request: Request): boolean {
 
 export async function POST(request: Request) {
   try {
-    // Verificar autenticaciÃ³n
+    // Verificar autenticación
     if (!verifyCronAuth(request)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
     const output = decide(cfg, { account, ticker24h, flexible, locked, dual });
 
-    // Guardar en auditorÃ­a (si estÃ¡ configurada)
+    // Guardar en auditoría (si está configurada)
     try {
       await saveAudit({
         generated_at: output.generated_at,
@@ -70,10 +70,10 @@ export async function POST(request: Request) {
       });
     } catch (auditError) {
       console.error("Error saving audit:", auditError);
-      // No fallar el cron si la auditorÃ­a falla
+      // No fallar el cron si la auditoría falla
     }
 
-    // Enviar notificaciÃ³n por Telegram (si estÃ¡ configurado)
+    // Enviar notificación por Telegram (si está configurado)
     try {
       await sendTelegramNotification(output);
     } catch (telegramError) {
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
   }
 }
 
-// FunciÃ³n para enviar notificaciÃ³n por Telegram
+// Función para enviar notificación por Telegram
 async function sendTelegramNotification(output: any) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;

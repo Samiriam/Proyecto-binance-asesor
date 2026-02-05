@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -27,12 +27,12 @@ export default function DashboardPage() {
         method: "POST",
       });
       if (!response.ok) {
-        throw new Error("Error generando recomendaciÃ³n");
+        throw new Error("Error generando recomendación");
       }
       const data = await response.json();
       setRecommendation(data);
     } catch (err) {
-      setError("Error generando recomendaciÃ³n: " + (err as Error).message);
+      setError("Error generando recomendación: " + (err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -61,7 +61,7 @@ export default function DashboardPage() {
               onClick={handleLogout}
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors shadow-md"
             >
-              Cerrar SesiÃ³n
+              Cerrar Sesión
             </button>
           </div>
         </div>
@@ -79,7 +79,7 @@ export default function DashboardPage() {
                   : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
               }`}
             >
-              ðŸ“Š Dashboard
+               Dashboard
             </button>
             <button
               onClick={() => setActiveTab("portfolio")}
@@ -89,7 +89,7 @@ export default function DashboardPage() {
                   : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
               }`}
             >
-              ðŸ’¼ Portafolio
+               Portafolio
             </button>
             <button
               onClick={() => setActiveTab("logic")}
@@ -99,7 +99,7 @@ export default function DashboardPage() {
                   : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
               }`}
             >
-              ðŸ§  LÃ³gica del Asesor
+                Lógica del Asesor
             </button>
           </nav>
         </div>
@@ -137,7 +137,7 @@ export default function DashboardPage() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    Generar RecomendaciÃ³n
+                    Generar Recomendación
                   </span>
                 )}
               </button>
@@ -175,7 +175,7 @@ export default function DashboardPage() {
                   No hay recomendaciones disponibles
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Haz clic en "Generar RecomendaciÃ³n" para obtener una recomendaciÃ³n personalizada
+                  Haz clic en "Generar Recomendación" para obtener una recomendación personalizada
                 </p>
               </div>
             )}
@@ -205,10 +205,10 @@ export default function DashboardPage() {
           <>
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                CÃ³mo Funciona el Asesor
+                Cómo Funciona el Asesor
               </h2>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Entiende la lÃ³gica detrÃ¡s de las recomendaciones generadas por el sistema
+                Entiende la lógica detrás de las recomendaciones generadas por el sistema
               </p>
             </div>
             <AdvisorLogic />

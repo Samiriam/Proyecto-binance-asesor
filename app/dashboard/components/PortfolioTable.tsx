@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 
@@ -37,7 +37,13 @@ export default function PortfolioTable({ balances: initialBalances }: PortfolioT
       ]);
 
       if (!accountRes.ok) {
-        throw new Error("Error fetching balances");
+        let detail = "";
+        try {
+          const errJson = await accountRes.json();
+          detail = errJson?.message || errJson?.error || "";
+        } catch {}
+        const statusMsg = detail ? ` (${detail})` : "";
+        throw new Error(`Error fetching balances${statusMsg}`);
       }
 
       const data = await accountRes.json();

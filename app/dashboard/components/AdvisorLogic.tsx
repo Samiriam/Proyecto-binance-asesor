@@ -1,30 +1,28 @@
-"use client";
+﻿"use client";
 
 export default function AdvisorLogic() {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-        🧠 Lógica del Asesor Binance
+        Lógica del Asesor Binance
       </h2>
-      
+
       <div className="space-y-6">
-        {/* Finalidad */}
         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md">
           <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-2">
-            🎯 Finalidad
+            Finalidad
           </h3>
           <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-            Este asesor te ayuda a optimizar tus rendimientos en Binance analizando tus saldos actuales, 
-            los productos de Simple Earn Flexible/Locked y las oportunidades de Dual Investment. 
-            El sistema genera <strong>una recomendación diaria</strong> basada en análisis de APR/APY, 
+            Este asesor te ayuda a optimizar tus rendimientos en Binance analizando tus saldos actuales,
+            los productos de Simple Earn Flexible/Locked y las oportunidades de Dual Investment.
+            El sistema genera <strong>una recomendación diaria</strong> basada en análisis de APR/APY,
             volatilidad y tu perfil de inversión.
           </p>
         </div>
 
-        {/* Cómo Funciona */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-            ⚙️ Cómo Funciona
+            Cómo Funciona
           </h3>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
@@ -46,7 +44,7 @@ export default function AdvisorLogic() {
               <div>
                 <h4 className="font-semibold text-gray-900 dark:text-white">Comparación de Oportunidades</h4>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Analiza los mejores productos Flexible y Dual disponibles en el mercado.
+                  Analiza los mejores productos Flexible, Locked y Dual disponibles en el mercado.
                 </p>
               </div>
             </div>
@@ -77,10 +75,9 @@ export default function AdvisorLogic() {
           </div>
         </div>
 
-        {/* Tipos de Recomendaciones */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-            📋 Tipos de Recomendaciones
+            Tipos de Recomendaciones
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-md">
@@ -98,6 +95,15 @@ export default function AdvisorLogic() {
               </h4>
               <p className="text-gray-700 dark:text-gray-300 text-xs">
                 Cambiar a otra stablecoin Flexible con mejor APR. Requiere mejora de al menos 0.5 puntos porcentuales.
+              </p>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-md">
+              <h4 className="font-semibold text-yellow-800 dark:text-yellow-300 text-sm mb-1">
+                LOCKED_SUGGEST
+              </h4>
+              <p className="text-gray-700 dark:text-gray-300 text-xs">
+                Considerar Simple Earn Locked si supera a Flexible en al menos 0.5pp.
               </p>
             </div>
 
@@ -121,10 +127,9 @@ export default function AdvisorLogic() {
           </div>
         </div>
 
-        {/* Umbrales y Configuración */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-            ⚖️ Umbrales de Decisión
+            Umbrales de Decisión
           </h3>
           <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-md">
             <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
@@ -138,6 +143,10 @@ export default function AdvisorLogic() {
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                <strong>Locked:</strong> Solo si supera a Flexible en ≥ 0.5pp
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
                 <strong>Dual Investment:</strong> Solo si diferencial ≥ 3pp y máximo 30% del saldo
               </li>
               <li className="flex items-center gap-2">
@@ -148,10 +157,9 @@ export default function AdvisorLogic() {
           </div>
         </div>
 
-        {/* Qué Falta */}
         <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-md">
           <h3 className="text-lg font-semibold text-orange-800 dark:text-orange-300 mb-2">
-            🔧 Qué Falta y Próximos Pasos
+            Qué Falta y Próximos Pasos
           </h3>
           <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
             <li className="flex items-start gap-2">
@@ -177,14 +185,13 @@ export default function AdvisorLogic() {
           </ul>
         </div>
 
-        {/* Importante */}
         <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-md border-l-4 border-red-500">
           <h3 className="text-lg font-semibold text-red-800 dark:text-red-300 mb-2">
-            ⚠️ Importante
+            Importante
           </h3>
           <p className="text-gray-700 dark:text-gray-300 text-sm">
-            Este asesor proporciona <strong>recomendaciones informativas</strong> y <strong>NO ejecuta operaciones automáticamente</strong>. 
-            Siempre revisa las recomendaciones y toma tus propias decisiones de inversión. 
+            Este asesor proporciona <strong>recomendaciones informativas</strong> y <strong>NO ejecuta operaciones automáticamente</strong>.
+            Siempre revisa las recomendaciones y toma tus propias decisiones de inversión.
             Las inversiones en criptomonedas conllevan riesgos significativos.
           </p>
         </div>

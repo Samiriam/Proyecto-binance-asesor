@@ -49,6 +49,7 @@ export async function POST(request: Request) {
         focus_flexible_apr: 0
       },
       topFlexible: [],
+      topLocked: [],
       topDual: [],
       recommendation: {
         type: "NO_ACTION",

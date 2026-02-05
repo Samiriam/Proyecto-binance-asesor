@@ -57,6 +57,31 @@ export function decide(cfg: Cfg, inputs: {
 
   const bestStable = topStableFlex[0];
 
+  // locked normalize
+  const lockedItems = arr(inputs.locked?.rows ?? inputs.locked?.data ?? inputs.locked);
+  const locked = lockedItems.map((it: any) => ({
+    asset: it.asset || it.productAsset || it.currency,
+    apr: readApr(it),
+    duration: n(it.duration ?? it.durationDays ?? it.period ?? it.lockedPeriod, 0),
+    purchasable: it.canPurchase ?? it.purchasable ?? true,
+    min: n(it.minPurchaseAmount ?? it.minAmount ?? it.minPurchase, 0),
+    quota: it.leftQuota ?? it.leftCapacity ?? it.leftAvailable ?? null
+  })).filter((x: any) => x.asset && x.purchasable);
+
+  const topStableLocked = locked.filter((x: any) => stable.has(x.asset))
+    .sort((a: any, b: any) => b.apr - a.apr).slice(0, 3);
+
+  const topLocked = topStableLocked.map((x: any) => ({
+    asset: x.asset,
+    apr: x.apr,
+    duration: x.duration,
+    min: x.min,
+    quota: x.quota,
+    reason: "Locked con APR competitivo"
+  }));
+
+  const bestLocked = topStableLocked[0];
+
   // focus asset: mayor saldo dentro de whitelist; si no, mayor saldo total
   let focusAsset = "";
   let focusTotal = 0;
@@ -116,6 +141,26 @@ export function decide(cfg: Cfg, inputs: {
     }
   }
 
+  if (
+    !blockedByVolatility &&
+    focusAsset &&
+    focusTotal > 0 &&
+    bestLocked &&
+    stable.has(focusAsset) &&
+    focusAsset === bestLocked.asset
+  ) {
+    const deltaLocked = bestLocked.apr - currentApr;
+    if (deltaLocked >= cfg.APR_SWITCH_THRESHOLD) {
+      recommendation = {
+        type: "LOCKED_SUGGEST",
+        asset: focusAsset,
+        amount_suggested: focusTotal,
+        duration_days: bestLocked.duration || cfg.DEFAULT_DURATION_DAYS,
+        reason: `Locked sugerido: APR ${bestLocked.apr}% vs Flexible ${currentApr}%.`
+      };
+    }
+  }
+
   // dual normalize (catálogo)
   const dualItems = arr(inputs.dual?.rows ?? inputs.dual?.data ?? inputs.dual);
   const dual = dualItems.map((it: any) => ({
@@ -162,6 +207,7 @@ export function decide(cfg: Cfg, inputs: {
       focus_flexible_apr: currentApr
     },
     topFlexible: topStableFlex,
+    topLocked,
     topDual,
     recommendation
   };

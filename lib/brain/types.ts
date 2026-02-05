@@ -1,4 +1,9 @@
-export type RecommendationType = "FLEXIBLE_STAY" | "FLEXIBLE_SWITCH" | "DUAL_SUGGEST" | "NO_ACTION";
+export type RecommendationType =
+  | "FLEXIBLE_STAY"
+  | "FLEXIBLE_SWITCH"
+  | "LOCKED_SUGGEST"
+  | "DUAL_SUGGEST"
+  | "NO_ACTION";
 
 export type Recommendation = {
   type: RecommendationType;
@@ -16,6 +21,7 @@ export type AdvisorOutput = {
     focus_flexible_apr: number;
   };
   topFlexible: Array<{ asset: string; apr: number; reason: string; min?: number; quota?: any }>;
+  topLocked: Array<{ asset: string; apr: number; duration?: number; reason: string; min?: number; quota?: any }>;
   topDual: Array<{ base: string; quote?: string; apy: number; strike?: number; worst_case: string; reason: string }>;
   recommendation: Recommendation;
 };

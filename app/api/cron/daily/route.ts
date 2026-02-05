@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { binancePublic, binanceSigned } from "@/lib/binance/client";
 import { decide } from "@/lib/brain/decision";
 import { getConfig } from "@/lib/config";
 import { saveAudit } from "@/lib/db";
 
-// Verifica autenticación del cron
+// Verifica autenticaciÃ³n del cron
 function verifyCronAuth(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
@@ -24,7 +24,7 @@ function verifyCronAuth(request: Request): boolean {
 
 export async function POST(request: Request) {
   try {
-    // Verificar autenticación
+    // Verificar autenticaciÃ³n
     if (!verifyCronAuth(request)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
     const output = decide(cfg, { account, ticker24h, flexible, locked, dual });
 
-    // Guardar en auditoría (si está configurada)
+    // Guardar en auditorÃ­a (si estÃ¡ configurada)
     try {
       await saveAudit({
         generated_at: output.generated_at,
@@ -70,10 +70,10 @@ export async function POST(request: Request) {
       });
     } catch (auditError) {
       console.error("Error saving audit:", auditError);
-      // No fallar el cron si la auditoría falla
+      // No fallar el cron si la auditorÃ­a falla
     }
 
-    // Enviar notificación por Telegram (si está configurado)
+    // Enviar notificaciÃ³n por Telegram (si estÃ¡ configurado)
     try {
       await sendTelegramNotification(output);
     } catch (telegramError) {
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
   }
 }
 
-// Función para enviar notificación por Telegram
+// FunciÃ³n para enviar notificaciÃ³n por Telegram
 async function sendTelegramNotification(output: any) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -98,21 +98,22 @@ async function sendTelegramNotification(output: any) {
     return;
   }
 
-  const message = `
-🤖 *Binance Advisor - Recomendación Diaria*
+    const message = `
+Binance Advisor - Recomendacion Diaria
 
-📅 *Fecha:* ${new Date(output.generated_at).toLocaleString('es-CL')}
+Fecha: ${new Date(output.generated_at).toLocaleString('es-CL')}
 
-🎯 *Tipo:* ${output.recommendation.type}
-💰 *Activo:* ${output.recommendation.asset}
-💵 *Monto:* ${output.recommendation.amount_suggested?.toFixed(2)}
-⏱️ *Duración:* ${output.recommendation.duration_days} días
+Tipo: ${output.recommendation.type}
+Activo: ${output.recommendation.asset}
+Monto: ${output.recommendation.amount_suggested?.toFixed(2)}
+Duracion: ${output.recommendation.duration_days} dias
 
-📝 *Razón:* ${output.recommendation.reason}
+Razon: ${output.recommendation.reason}
 
 ---
-📊 *Top Flexible:* ${output.topFlexible.map((f: any) => f.asset + ' (' + f.apr?.toFixed(2) + '%)').join(', ')}
-📈 *Top Dual:* ${output.topDual.map((d: any) => d.base + '/' + d.quote + ' (' + d.apy?.toFixed(2) + '%)').join(', ')}
+Top Flexible: ${output.topFlexible.map((f: any) => f.asset + ' (' + f.apr?.toFixed(2) + '%)').join(', ')}
+Top Locked: ${output.topLocked?.map((l: any) => l.asset + ' (' + l.apr?.toFixed(2) + '%)').join(', ') || 'N/A'}
+Top Dual: ${output.topDual.map((d: any) => d.base + '/' + d.quote + ' (' + d.apy?.toFixed(2) + '%)').join(', ')}
   `;
 
   const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -131,3 +132,4 @@ async function sendTelegramNotification(output: any) {
 
   return await response.json();
 }
+

@@ -16,6 +16,8 @@ export default function RecommendationBox({ recommendation }: { recommendation: 
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
       case "FLEXIBLE_SWITCH":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "LOCKED_SUGGEST":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
       case "DUAL_SUGGEST":
         return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
       case "NO_ACTION":
@@ -31,6 +33,8 @@ export default function RecommendationBox({ recommendation }: { recommendation: 
         return "Mantener Flexible";
       case "FLEXIBLE_SWITCH":
         return "Cambiar Flexible";
+      case "LOCKED_SUGGEST":
+        return "Sugerir Locked";
       case "DUAL_SUGGEST":
         return "Sugerir Dual";
       case "NO_ACTION":

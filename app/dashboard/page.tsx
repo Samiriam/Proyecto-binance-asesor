@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import PortfolioSummary from "./components/PortfolioSummary";
 import PortfolioTable from "./components/PortfolioTable";
 import FlexibleTop from "./components/FlexibleTop";
+import LockedTop from "./components/LockedTop";
 import DualTop from "./components/DualTop";
 import RecommendationBox from "./components/RecommendationBox";
 import AdvisorLogic from "./components/AdvisorLogic";
@@ -158,6 +159,7 @@ export default function DashboardPage() {
                 <PortfolioSummary summary={recommendation.portfolio_summary} />
                 <RecommendationBox recommendation={recommendation.recommendation} />
                 <FlexibleTop items={recommendation.topFlexible} />
+                <LockedTop items={recommendation.topLocked} />
                 <DualTop items={recommendation.topDual} />
               </div>
             )}

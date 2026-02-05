@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 
@@ -7,7 +7,7 @@ interface Balance {
   free: number;
   locked: number;
   total: number;
-  usdtValue?: number;
+  usdtValue?: number | null;
 }
 
 interface PortfolioTableProps {
@@ -31,22 +31,50 @@ export default function PortfolioTable({ balances: initialBalances }: PortfolioT
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/binance/account");
-      if (!response.ok) {
+      const [accountRes, tickerRes] = await Promise.all([
+        fetch("/api/binance/account"),
+        fetch("/api/binance/ticker24h")
+      ]);
+
+      if (!accountRes.ok) {
         throw new Error("Error fetching balances");
       }
-      const data = await response.json();
-      
-      // Procesar balances
+
+      const data = await accountRes.json();
+      const tickerData = tickerRes.ok ? await tickerRes.json() : [];
+
+      const tickerMap = new Map<string, number>();
+      for (const t of tickerData || []) {
+        if (t?.symbol && t?.lastPrice) {
+          tickerMap.set(t.symbol, Number(t.lastPrice));
+        }
+      }
+
+      const stable = new Set(["USDT", "USDC", "FDUSD", "BUSD", "DAI", "TUSD"]);
+
       const processedBalances = data.balances
         .filter((b: any) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0)
-        .map((b: any) => ({
-          asset: b.asset,
-          free: parseFloat(b.free),
-          locked: parseFloat(b.locked),
-          total: parseFloat(b.free) + parseFloat(b.locked),
-          usdtValue: 0 // Se calcularía con precios reales
-        }))
+        .map((b: any) => {
+          const free = parseFloat(b.free);
+          const locked = parseFloat(b.locked);
+          const total = free + locked;
+          let usdtValue: number | null = null;
+
+          if (stable.has(b.asset)) {
+            usdtValue = total;
+          } else {
+            const price = tickerMap.get(`${b.asset}USDT`);
+            usdtValue = price ? total * price : null;
+          }
+
+          return {
+            asset: b.asset,
+            free,
+            locked,
+            total,
+            usdtValue
+          };
+        })
         .filter((b: Balance) => b.total > 0);
 
       setBalances(processedBalances);
@@ -57,12 +85,12 @@ export default function PortfolioTable({ balances: initialBalances }: PortfolioT
     }
   };
 
-  const totalUSDT = balances.reduce((sum, b) => sum + (b.usdtValue || 0), 0);
+  const totalUSDT = balances.reduce((sum, b) => sum + (b.usdtValue ?? 0), 0);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               Portafolio Binance
@@ -70,6 +98,11 @@ export default function PortfolioTable({ balances: initialBalances }: PortfolioT
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               Saldo actual en tu cuenta de Binance
             </p>
+            {totalUSDT > 0 && (
+              <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                Total estimado: ${totalUSDT.toFixed(2)} USDT
+              </p>
+            )}
           </div>
           <button
             onClick={fetchBalances}
@@ -133,7 +166,7 @@ export default function PortfolioTable({ balances: initialBalances }: PortfolioT
                   {balance.total.toFixed(6)}
                 </td>
                 <td className="py-4 px-4 text-green-600 dark:text-green-400 font-semibold">
-                  {balance.usdtValue ? `$${balance.usdtValue.toFixed(2)}` : "N/A"}
+                  {balance.usdtValue != null ? `$${balance.usdtValue.toFixed(2)}` : "N/A"}
                 </td>
               </tr>
             ))}

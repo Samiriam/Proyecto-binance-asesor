@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import PortfolioSummary from "./components/PortfolioSummary";
 import PortfolioTable from "./components/PortfolioTable";
@@ -18,14 +18,6 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"dashboard" | "portfolio" | "logic">("dashboard");
 
-  useEffect(() => {
-    // Verificar sesión
-    const session = document.cookie.includes("admin_session=true");
-    if (!session) {
-      router.push("/login");
-    }
-  }, [router]);
-
   const handleGenerateRecommendation = async () => {
     setLoading(true);
     setError("");
@@ -34,19 +26,19 @@ export default function DashboardPage() {
         method: "POST",
       });
       if (!response.ok) {
-        throw new Error("Error generando recomendación");
+        throw new Error("Error generando recomendaciÃ³n");
       }
       const data = await response.json();
       setRecommendation(data);
     } catch (err) {
-      setError("Error generando recomendación: " + (err as Error).message);
+      setError("Error generando recomendaciÃ³n: " + (err as Error).message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    document.cookie = "admin_session=; path=/; max-age=0";
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
   };
 
@@ -68,7 +60,7 @@ export default function DashboardPage() {
               onClick={handleLogout}
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors shadow-md"
             >
-              Cerrar Sesión
+              Cerrar SesiÃ³n
             </button>
           </div>
         </div>
@@ -86,7 +78,7 @@ export default function DashboardPage() {
                   : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
               }`}
             >
-              📊 Dashboard
+              ðŸ“Š Dashboard
             </button>
             <button
               onClick={() => setActiveTab("portfolio")}
@@ -96,7 +88,7 @@ export default function DashboardPage() {
                   : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
               }`}
             >
-              💼 Portafolio
+              ðŸ’¼ Portafolio
             </button>
             <button
               onClick={() => setActiveTab("logic")}
@@ -106,7 +98,7 @@ export default function DashboardPage() {
                   : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
               }`}
             >
-              🧠 Lógica del Asesor
+              ðŸ§  LÃ³gica del Asesor
             </button>
           </nav>
         </div>
@@ -144,7 +136,7 @@ export default function DashboardPage() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    Generar Recomendación
+                    Generar RecomendaciÃ³n
                   </span>
                 )}
               </button>
@@ -181,7 +173,7 @@ export default function DashboardPage() {
                   No hay recomendaciones disponibles
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Haz clic en "Generar Recomendación" para obtener una recomendación personalizada
+                  Haz clic en "Generar RecomendaciÃ³n" para obtener una recomendaciÃ³n personalizada
                 </p>
               </div>
             )}
@@ -211,10 +203,10 @@ export default function DashboardPage() {
           <>
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Cómo Funciona el Asesor
+                CÃ³mo Funciona el Asesor
               </h2>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Entiende la lógica detrás de las recomendaciones generadas por el sistema
+                Entiende la lÃ³gica detrÃ¡s de las recomendaciones generadas por el sistema
               </p>
             </div>
             <AdvisorLogic />
@@ -226,7 +218,7 @@ export default function DashboardPage() {
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <p className="text-center text-gray-600 dark:text-gray-400 text-sm">
-            Binance Advisor - Asistente de Inversiones • Las recomendaciones son informativas y no constituyen asesoramiento financiero
+            Binance Advisor - Asistente de Inversiones â€¢ Las recomendaciones son informativas y no constituyen asesoramiento financiero
           </p>
         </div>
       </footer>

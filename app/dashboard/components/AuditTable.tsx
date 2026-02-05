@@ -87,7 +87,7 @@ export default function AuditTable() {
                     {record.generated_at ? new Date(record.generated_at).toLocaleString() : "N/A"}
                   </td>
                   <td className="py-3 px-4 text-gray-900 dark:text-white">
-                    {record.recommendation_type || record.recommendation_type}
+                    {record.recommendation_type || "N/A"}
                   </td>
                   <td className="py-3 px-4 text-gray-900 dark:text-white">
                     {record.asset}

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const cfg = getConfig();
+    const cfg = await getConfig();
 
     // Ejecutar llamadas con manejo de errores individuales (resiliente)
     const results = await Promise.allSettled([

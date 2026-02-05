@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { getAuditHistory } from "@/lib/db";
+import { verifySessionFromRequest } from "@/lib/auth/session";
 
 export async function GET(request: Request) {
+  if (!(await verifySessionFromRequest(request))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const limitParam = searchParams.get("limit");

@@ -2,10 +2,15 @@ import { NextResponse } from "next/server";
 import { binancePublic, binanceSigned } from "@/lib/binance/client";
 import { decide } from "@/lib/brain/decision";
 import { getConfig } from "@/lib/config";
+import { verifySessionFromRequest } from "@/lib/auth/session";
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    const cfg = getConfig();
+    if (!(await verifySessionFromRequest(request))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const cfg = await getConfig();
 
     // Ejecutar llamadas con manejo de errores individuales
     const results = await Promise.allSettled([

@@ -1,6 +1,4 @@
-﻿import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-
-// Database client for audit (Supabase Postgres)
+﻿import { getSupabase } from "./supabase";
 
 export interface AuditRecord {
   id?: number;
@@ -14,27 +12,6 @@ export interface AuditRecord {
 }
 
 const AUDIT_TABLE = "advisor_audit";
-let supabase: SupabaseClient | null = null;
-
-function getSupabase(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !serviceRoleKey) {
-    return null;
-  }
-
-  if (!supabase) {
-    supabase = createClient(url, serviceRoleKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false
-      }
-    });
-  }
-
-  return supabase;
-}
 
 export async function saveAudit(record: AuditRecord): Promise<void> {
   const client = getSupabase();

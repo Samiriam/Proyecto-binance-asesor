@@ -12,3 +12,9 @@ CREATE TABLE IF NOT EXISTS advisor_audit (
 CREATE INDEX IF NOT EXISTS idx_advisor_audit_generated_at ON advisor_audit(generated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_advisor_audit_type ON advisor_audit(recommendation_type);
 CREATE INDEX IF NOT EXISTS idx_advisor_audit_asset ON advisor_audit(asset);
+
+CREATE TABLE IF NOT EXISTS advisor_config (
+  id INT PRIMARY KEY,
+  data JSONB NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

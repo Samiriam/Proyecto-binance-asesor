@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -8,21 +8,30 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    // Validación simple
-    const ADMIN_USER = process.env.NEXT_PUBLIC_ADMIN_USER || "admin";
-    const ADMIN_PASS = process.env.NEXT_PUBLIC_ADMIN_PASS || "admin";
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
 
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
-      // Establecer sesión
-      document.cookie = "admin_session=true; path=/; max-age=86400";
+      if (!response.ok) {
+        setError("Credenciales invalidas");
+        return;
+      }
+
       router.push("/dashboard");
-    } else {
-      setError("Credenciales inválidas");
+    } catch (err) {
+      setError("Error de inicio de sesion");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -48,7 +57,7 @@ export default function LoginPage() {
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Contraseña
+              Contrasena
             </label>
             <input
               type="password"
@@ -64,9 +73,10 @@ export default function LoginPage() {
           )}
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
           >
-            Iniciar Sesión
+            {loading ? "Ingresando..." : "Iniciar Sesion"}
           </button>
         </form>
       </div>

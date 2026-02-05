@@ -79,6 +79,7 @@ export function decide(cfg: Cfg, inputs: {
     duration_days: cfg.DEFAULT_DURATION_DAYS,
     reason: "Datos insuficientes o no hay ventaja clara"
   };
+  let blockedByVolatility = false;
 
   if (focusAsset && focusTotal > 0 && bestStable) {
     const delta = bestStable.apr - currentApr;
@@ -86,6 +87,7 @@ export function decide(cfg: Cfg, inputs: {
     // guardia volatilidad para activos no stable
     const v = vol24(focusAsset);
     if (!stable.has(focusAsset) && Math.abs(v) >= cfg.VOLATILITY_GUARD_24H) {
+      blockedByVolatility = true;
       recommendation = {
         type: "NO_ACTION",
         asset: focusAsset,
@@ -138,7 +140,7 @@ export function decide(cfg: Cfg, inputs: {
   }));
 
   // regla dual: solo si diferencial >= 3pp y sugerir % pequeño
-  if (bestDual && (bestDual.apy - bestFlexibleApr) >= 3) {
+  if (!blockedByVolatility && bestDual && (bestDual.apy - bestFlexibleApr) >= 3) {
     const baseBal = spot.get(bestDual.base)?.total ?? 0;
     const amt = Math.max(0, baseBal * cfg.MAX_DUAL_PERCENT);
     if (amt > 0) {

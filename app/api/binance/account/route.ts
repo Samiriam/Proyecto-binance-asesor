@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { binanceSigned } from "@/lib/binance/client";
+import { verifySessionFromRequest } from "@/lib/auth/session";
 
-export async function GET() {
+export async function GET(request: Request) {
+  if (!(await verifySessionFromRequest(request))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     // Verificar que las credenciales estén configuradas
     const apiKey = process.env.BINANCE_API_KEY;

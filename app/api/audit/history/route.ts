@@ -1,0 +1,19 @@
+import { NextResponse } from "next/server";
+import { getAuditHistory } from "@/lib/db";
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam ? Number(limitParam) : 50;
+
+    const data = await getAuditHistory(limit);
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Error fetching audit history:", error);
+    return NextResponse.json(
+      { error: "Error fetching audit history" },
+      { status: 500 }
+    );
+  }
+}

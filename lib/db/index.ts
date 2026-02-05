@@ -1,5 +1,6 @@
-// Cliente de base de datos para auditoría
-// Compatible con Postgres (Neon, Supabase) o Vercel KV
+﻿import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+// Database client for audit (Supabase Postgres)
 
 export interface AuditRecord {
   id?: number;
@@ -12,41 +13,81 @@ export interface AuditRecord {
   payload: any;
 }
 
-// Función para guardar registro de auditoría
+const AUDIT_TABLE = "advisor_audit";
+let supabase: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !serviceRoleKey) {
+    return null;
+  }
+
+  if (!supabase) {
+    supabase = createClient(url, serviceRoleKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    });
+  }
+
+  return supabase;
+}
+
 export async function saveAudit(record: AuditRecord): Promise<void> {
-  const DATABASE_URL = process.env.DATABASE_URL;
-  
-  if (!DATABASE_URL) {
-    console.warn("DATABASE_URL no configurado, omitiendo auditoría");
+  const client = getSupabase();
+  if (!client) {
+    console.warn("SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set, skipping audit");
     return;
   }
 
   try {
-    // Aquí iría la implementación con pg o @vercel/postgres
-    // Por ahora es un placeholder
-    console.log("Guardando auditoría:", record);
+    const { error } = await client.from(AUDIT_TABLE).insert([
+      {
+        generated_at: record.generated_at,
+        recommendation_type: record.recommendation_type,
+        asset: record.asset,
+        amount_suggested: record.amount_suggested,
+        duration_days: record.duration_days,
+        reason: record.reason,
+        payload: record.payload ?? {}
+      }
+    ]);
+
+    if (error) {
+      throw new Error(error.message);
+    }
   } catch (error) {
-    console.error("Error guardando auditoría:", error);
+    console.error("Error saving audit:", error);
     throw error;
   }
 }
 
-// Función para obtener historial de auditoría
 export async function getAuditHistory(limit: number = 50): Promise<AuditRecord[]> {
-  const DATABASE_URL = process.env.DATABASE_URL;
-  
-  if (!DATABASE_URL) {
-    console.warn("DATABASE_URL no configurado, retornando historial vacío");
+  const client = getSupabase();
+  if (!client) {
+    console.warn("SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set, returning empty history");
     return [];
   }
 
+  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(200, limit)) : 50;
+
   try {
-    // Aquí iría la implementación con pg o @vercel/postgres
-    // Por ahora es un placeholder
-    console.log("Obteniendo historial de auditoría, límite:", limit);
-    return [];
+    const { data, error } = await client
+      .from(AUDIT_TABLE)
+      .select("*")
+      .order("generated_at", { ascending: false })
+      .limit(safeLimit);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data ?? [];
   } catch (error) {
-    console.error("Error obteniendo historial de auditoría:", error);
+    console.error("Error fetching audit history:", error);
     throw error;
   }
 }

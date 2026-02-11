@@ -16,6 +16,7 @@ export async function decide(cfg: Cfg, inputs: {
   flexible: any;
   locked: any;
   dual: any;
+  targetAsset?: string;
 }): Promise<AdvisorOutput> {
   const stable = new Set(cfg.STABLECOINS_WHITELIST);
   const predictor = new MarketPredictor();
@@ -84,16 +85,23 @@ export async function decide(cfg: Cfg, inputs: {
 
   const bestLocked = topStableLocked[0];
 
-  // focus asset: mayor saldo dentro de whitelist; si no, mayor saldo total
+  // determine focus asset
   let focusAsset = "";
   let focusTotal = 0;
-  for (const a of cfg.STABLECOINS_WHITELIST) {
-    const v = spot.get(a);
-    if (v?.total && v.total > focusTotal) { focusAsset = a; focusTotal = v.total; }
-  }
-  if (!focusAsset) {
-    for (const [a, v] of spot.entries()) {
-      if (v.total > focusTotal) { focusAsset = a; focusTotal = v.total; }
+
+  if (inputs.targetAsset) {
+    focusAsset = inputs.targetAsset;
+    focusTotal = spot.get(focusAsset)?.total ?? 0;
+  } else {
+    // legacy auto-detection
+    for (const a of cfg.STABLECOINS_WHITELIST) {
+      const v = spot.get(a);
+      if (v?.total && v.total > focusTotal) { focusAsset = a; focusTotal = v.total; }
+    }
+    if (!focusAsset) {
+      for (const [a, v] of spot.entries()) {
+        if (v.total > focusTotal) { focusAsset = a; focusTotal = v.total; }
+      }
     }
   }
 
@@ -102,19 +110,21 @@ export async function decide(cfg: Cfg, inputs: {
   // AI & Smart Yield Analysis
   let aiAnalysis = undefined;
   if (focusAsset) {
-    const pred = await predictor.predictTrend(focusAsset === 'USDT' ? 'BTCUSDT' : `${focusAsset}USDT`);
-    // Si es USDT, analizamos BTC como "referencia de mercado" o simplemente no hay predicción de precio para USDT
-    // Mejor: Si es stablecoin, analizamos su Smart Yield comparado con otras
+    // If focus is USDT, prediction is on BTC mostly for market sentiment, 
+    // but for swap logic we need to know if USDT itself is safe? 
+    // MarketPredictor handles stablecoins logic internally somewhat.
+    const searchSymbol = (focusAsset === 'USDT' || focusAsset === 'USDC' || focusAsset === 'FDUSD')
+      ? 'BTCUSDT'
+      : `${focusAsset}USDT`;
 
-    // Real Yield Analysis
+    const pred = await predictor.predictTrend(searchSymbol);
     const smartYield = await predictor.analyzeSmartYield(focusAsset, currentApr, stable.has(focusAsset));
-
-    // If focus is stable, we might want market sentiment from BTC to know if we should deploy capitol
-    const marketSentiment = await predictor.predictTrend('BTCUSDT');
+    const marketSentiment = (searchSymbol !== 'BTCUSDT') ? await predictor.predictTrend('BTCUSDT') : pred;
 
     aiAnalysis = {
-      prediction: focusAsset === 'USDT' ? marketSentiment : await predictor.predictTrend(`${focusAsset}USDT`),
-      smartYield
+      prediction: pred,
+      smartYield,
+      marketSentiment // Useful to know global trend
     };
   }
 
@@ -125,21 +135,65 @@ export async function decide(cfg: Cfg, inputs: {
     duration_days: cfg.DEFAULT_DURATION_DAYS,
     reason: "Datos insuficientes o no hay ventaja clara"
   };
+
   let blockedByVolatility = false;
   let blockedByAI = false;
 
-  // AI Guard
-  if (aiAnalysis && aiAnalysis.smartYield.isTrap) {
+  // 1. Grid Bot Detection (Prioridad si usuario selecciona activo volátil)
+  if (focusAsset && !stable.has(focusAsset)) {
+    const gridAnalysis = await predictor.analyzeGridBotSuitability(focusAsset);
+    if (gridAnalysis.suitable) {
+      recommendation = {
+        type: "SPOT_GRID_BOT",
+        asset: focusAsset,
+        amount_suggested: focusTotal,
+        duration_days: 7, // Bots usually run for a while
+        reason: `💡 ESTRATEGIA: ${gridAnalysis.reason}`
+      };
+
+      return {
+        generated_at: new Date().toISOString(),
+        portfolio_summary: {
+          focus_asset: focusAsset,
+          focus_total: focusTotal,
+          focus_flexible_apr: currentApr
+        },
+        topFlexible: topStableFlex,
+        topLocked,
+        topDual: [],
+        recommendation,
+        ai_analysis: aiAnalysis
+      };
+    }
+  }
+
+  // 2. Swap Opportunity (Price Crash Protection)
+  if (aiAnalysis && aiAnalysis.prediction.direction === 'DOWN' && aiAnalysis.prediction.confidence > 0.6) {
+    if (!stable.has(focusAsset)) {
+      recommendation = {
+        type: "SWAP_OPPORTUNITY",
+        asset: bestStable?.asset || "USDT",
+        amount_suggested: focusTotal,
+        duration_days: 0,
+        reason: `📉 ALERTA BAJISTA: ${focusAsset} tiene tendencia negativa. Sugerimos refugio en ${bestStable?.asset || "USDT"}.`
+      };
+      blockedByAI = true;
+    }
+  }
+
+  // AI Guard (Smart Yield Trap)
+  if (!blockedByAI && aiAnalysis && aiAnalysis.smartYield.isTrap) {
     recommendation = {
-      type: "NO_ACTION",
-      asset: focusAsset,
-      amount_suggested: 0,
+      type: "SWAP_OPPORTUNITY",
+      asset: bestStable?.asset || "USDT",
+      amount_suggested: focusTotal,
       duration_days: 1,
-      reason: `⛔ ALERTA IA: Trampa de Yield detectada. ${aiAnalysis.smartYield.reason}`
+      reason: `⛔ TRAMPA DE YIELD: ${aiAnalysis.smartYield.reason}. Mejor cambiar a ${bestStable?.asset}.`
     };
     blockedByAI = true;
   }
 
+  // Standard Flexible/Locked Logic (if not blocked/bot)
   if (!blockedByAI && focusAsset && focusTotal > 0 && bestStable) {
     const delta = bestStable.apr - currentApr;
 
@@ -155,15 +209,25 @@ export async function decide(cfg: Cfg, inputs: {
         reason: `Volatilidad 24h alta (${v.toFixed(2)}%). Reevaluar.`
       };
     } else if (focusAsset === bestStable.asset || delta < cfg.APR_SWITCH_THRESHOLD) {
-      recommendation = {
-        type: "FLEXIBLE_STAY",
-        asset: focusAsset,
-        amount_suggested: focusTotal,
-        duration_days: cfg.DEFAULT_DURATION_DAYS,
-        reason: focusAsset === bestStable.asset
-          ? `Ya estás en la mejor stablecoin (APR ${currentApr}%).`
-          : `Mejora APR insuficiente (+${delta.toFixed(2)}pp).`
-      };
+      // Logic for staying in current asset
+      if (focusAsset === bestStable.asset) {
+        recommendation = {
+          type: "FLEXIBLE_STAY",
+          asset: focusAsset,
+          amount_suggested: focusTotal,
+          duration_days: cfg.DEFAULT_DURATION_DAYS,
+          reason: `Ya estás en la mejor stablecoin (APR ${currentApr}%).`
+        };
+      } else {
+        // Not best stable, but diff is small
+        recommendation = {
+          type: "FLEXIBLE_STAY",
+          asset: focusAsset,
+          amount_suggested: focusTotal,
+          duration_days: cfg.DEFAULT_DURATION_DAYS,
+          reason: `Mejora APR insuficiente (+${delta.toFixed(2)}pp).`
+        };
+      }
     } else {
       // Check AI for the TARGET asset
       const targetYield = await predictor.analyzeSmartYield(bestStable.asset, bestStable.apr, true);

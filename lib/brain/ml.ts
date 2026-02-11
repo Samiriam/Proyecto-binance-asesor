@@ -159,4 +159,42 @@ export class MarketPredictor {
             reason
         };
     }
+
+    async analyzeGridBotSuitability(asset: string): Promise<{ suitable: boolean; confidence: number; reason: string }> {
+        const symbol = `${asset}USDT`;
+        let prediction: Prediction;
+        try {
+            prediction = await this.predictTrend(symbol);
+        } catch (e) {
+            return { suitable: false, confidence: 0, reason: "Sin datos." };
+        }
+
+        // Grid Bot logic:
+        // 1. Trend is Neutral (Sideways)
+        // 2. High Volatility (enough price swings to make profit)
+
+        const isNeutral = prediction.direction === 'NEUTRAL';
+        const hasVolatility = prediction.volatility > 0.02 && prediction.volatility < 0.15; // 2% to 15% range
+
+        // If trend is slightly UP but volatile, also okay for Long Grid
+        // But for neutral grid, we want sideways.
+
+        if (isNeutral && hasVolatility) {
+            return {
+                suitable: true,
+                confidence: 0.8,
+                reason: `Mercado Lateral con Volatilidad (${(prediction.volatility * 100).toFixed(1)}%). Ideal para Spot Grid Bot.`
+            };
+        }
+
+        if (prediction.volatility <= 0.02) {
+            return { suitable: false, confidence: 0, reason: "Baja volatilidad para Bot." };
+        }
+
+        if (!isNeutral) {
+            return { suitable: false, confidence: 0, reason: `Tendencia definida (${prediction.direction}). Riesgo de salir del rango.` };
+        }
+
+        return { suitable: false, confidence: 0, reason: "No cumple criterios." };
+    }
 }

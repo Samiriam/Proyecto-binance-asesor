@@ -3,6 +3,8 @@ export type RecommendationType =
   | "FLEXIBLE_SWITCH"
   | "LOCKED_SUGGEST"
   | "DUAL_SUGGEST"
+  | "SPOT_GRID_BOT"
+  | "SWAP_OPPORTUNITY"
   | "NO_ACTION";
 
 export type Recommendation = {
@@ -29,6 +31,7 @@ export type AdvisorOutput = {
       direction: 'UP' | 'DOWN' | 'NEUTRAL';
       confidence: number;
       predictedChangePercent: number;
+      volatility: number;
     };
     smartYield: {
       realYield: number;

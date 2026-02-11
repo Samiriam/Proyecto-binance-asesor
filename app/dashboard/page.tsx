@@ -11,6 +11,7 @@ import RecommendationBox from "./components/RecommendationBox";
 import AdvisorLogic from "./components/AdvisorLogic";
 import AuditTable from "./components/AuditTable";
 import ConfigPanel from "./components/ConfigPanel";
+import AssetSelector from "./components/AssetSelector";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -19,12 +20,15 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"dashboard" | "portfolio" | "logic">("dashboard");
 
-  const handleGenerateRecommendation = async () => {
+  const handleGenerateRecommendation = async (targetAsset?: string) => {
     setLoading(true);
     setError("");
+    setRecommendation(null); // Clear previous
     try {
       const response = await fetch("/api/recommend", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetAsset }),
       });
       if (!response.ok) {
         throw new Error("Error generando recomendación");
@@ -74,8 +78,8 @@ export default function DashboardPage() {
             <button
               onClick={() => setActiveTab("dashboard")}
               className={`px-6 py-4 font-medium transition-colors border-b-2 ${activeTab === "dashboard"
-                  ? "text-blue-600 border-blue-600 dark:text-blue-400 dark:border-blue-400"
-                  : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                ? "text-blue-600 border-blue-600 dark:text-blue-400 dark:border-blue-400"
+                : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                 }`}
             >
               Dashboard
@@ -83,8 +87,8 @@ export default function DashboardPage() {
             <button
               onClick={() => setActiveTab("portfolio")}
               className={`px-6 py-4 font-medium transition-colors border-b-2 ${activeTab === "portfolio"
-                  ? "text-blue-600 border-blue-600 dark:text-blue-400 dark:border-blue-400"
-                  : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                ? "text-blue-600 border-blue-600 dark:text-blue-400 dark:border-blue-400"
+                : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                 }`}
             >
               Portafolio
@@ -92,8 +96,8 @@ export default function DashboardPage() {
             <button
               onClick={() => setActiveTab("logic")}
               className={`px-6 py-4 font-medium transition-colors border-b-2 ${activeTab === "logic"
-                  ? "text-blue-600 border-blue-600 dark:text-blue-400 dark:border-blue-400"
-                  : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                ? "text-blue-600 border-blue-600 dark:text-blue-400 dark:border-blue-400"
+                : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                 }`}
             >
               Lógica del Asesor
@@ -117,7 +121,7 @@ export default function DashboardPage() {
                 </p>
               </div>
               <button
-                onClick={handleGenerateRecommendation}
+                onClick={() => handleGenerateRecommendation()}
                 disabled={loading}
                 className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 transition-all shadow-lg hover:shadow-xl font-semibold"
               >
@@ -127,18 +131,20 @@ export default function DashboardPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Generando...
+                    Analizar Portafolio
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    Generar Recomendación
+                    Analizar Portafolio
                   </span>
                 )}
               </button>
             </div>
+
+            <AssetSelector onSelect={handleGenerateRecommendation} isLoading={loading} />
 
             {error && (
               <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg">

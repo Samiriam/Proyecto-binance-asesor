@@ -36,7 +36,10 @@ export async function POST(request: Request) {
       }
     });
 
-    const output = await decide(cfg, { account, ticker24h, flexible, locked, dual });
+    const body = await request.json().catch(() => ({}));
+    const { targetAsset } = body;
+
+    const output = await decide(cfg, { account, ticker24h, flexible, locked, dual, targetAsset });
     return NextResponse.json(output);
   } catch (error) {
     console.error("Error generating recommendation:", error);

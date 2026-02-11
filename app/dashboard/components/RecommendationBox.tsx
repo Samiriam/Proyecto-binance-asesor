@@ -20,6 +20,10 @@ export default function RecommendationBox({ recommendation, aiAnalysis }: { reco
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
       case "DUAL_SUGGEST":
         return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      case "SPOT_GRID_BOT":
+        return "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200";
+      case "SWAP_OPPORTUNITY":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
       case "NO_ACTION":
         return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
       default:
@@ -37,6 +41,10 @@ export default function RecommendationBox({ recommendation, aiAnalysis }: { reco
         return "Sugerir Locked";
       case "DUAL_SUGGEST":
         return "Sugerir Dual";
+      case "SPOT_GRID_BOT":
+        return "🤖 Bot Spot Grid";
+      case "SWAP_OPPORTUNITY":
+        return "🔄 Oportunidad Swap";
       case "NO_ACTION":
         return "Sin Acción";
       default:
@@ -44,8 +52,13 @@ export default function RecommendationBox({ recommendation, aiAnalysis }: { reco
     }
   };
 
+  const isBotOrSwap = recommendation.type === 'SPOT_GRID_BOT' || recommendation.type === 'SWAP_OPPORTUNITY';
+
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-2 border-blue-500">
+    <div className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-2 ${recommendation.type === 'SWAP_OPPORTUNITY' ? 'border-orange-500' :
+        recommendation.type === 'SPOT_GRID_BOT' ? 'border-cyan-500' :
+          'border-blue-500'
+      }`}>
       <div className="flex justify-between items-start mb-4">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
           Recomendación
@@ -65,33 +78,55 @@ export default function RecommendationBox({ recommendation, aiAnalysis }: { reco
         {/* Main Recommendation */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(recommendation.type)}`}>
+            <span className={`px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 ${getTypeColor(recommendation.type)}`}>
               {getTypeLabel(recommendation.type)}
             </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Activo</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">
-                {recommendation.asset}
-              </p>
+
+          {!isBotOrSwap ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Activo</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
+                  {recommendation.asset}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Monto Sugerido</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
+                  {recommendation.amount_suggested?.toFixed(2)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Duración (días)</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
+                  {recommendation.duration_days}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Monto Sugerido</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">
-                {recommendation.amount_suggested?.toFixed(2)}
-              </p>
+          ) : (
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estrategia</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{recommendation.asset}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acción</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {recommendation.type === 'SPOT_GRID_BOT' ? 'Iniciar Grid Bot' : 'Realizar Swap'}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Duración (días)</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">
-                {recommendation.duration_days}
-              </p>
-            </div>
-          </div>
-          <div className="bg-blue-50 dark:bg-gray-700/50 p-4 rounded-md">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Razón</p>
-            <p className="text-gray-900 dark:text-white font-medium">
+          )}
+
+          <div className={`p-4 rounded-md ${recommendation.type === 'SWAP_OPPORTUNITY' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-900 dark:text-orange-200' :
+              recommendation.type === 'SPOT_GRID_BOT' ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-900 dark:text-cyan-200' :
+                'bg-blue-50 dark:bg-gray-700/50'
+            }`}>
+            <p className="text-sm opacity-75 mb-1">Razón</p>
+            <p className="font-medium">
               {recommendation.reason}
             </p>
           </div>
@@ -110,7 +145,7 @@ export default function RecommendationBox({ recommendation, aiAnalysis }: { reco
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Tendencia (7 días)</p>
                 <div className="flex items-center gap-2">
                   <span className={`text-xl font-bold ${aiAnalysis.prediction.direction === 'UP' ? 'text-green-500' :
-                      aiAnalysis.prediction.direction === 'DOWN' ? 'text-red-500' : 'text-gray-500'
+                    aiAnalysis.prediction.direction === 'DOWN' ? 'text-red-500' : 'text-gray-500'
                     }`}>
                     {aiAnalysis.prediction.direction === 'UP' ? '↗ ALCISTA' :
                       aiAnalysis.prediction.direction === 'DOWN' ? '↘ BAJISTA' : '→ NEUTRAL'}

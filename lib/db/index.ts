@@ -13,15 +13,15 @@ export interface AuditRecord {
 
 const AUDIT_TABLE = "advisor_audit";
 
-export async function saveAudit(record: AuditRecord): Promise<void> {
+export async function saveAudit(record: AuditRecord): Promise<number | null> {
   const client = getSupabase();
   if (!client) {
     console.warn("SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set, skipping audit");
-    return;
+    return null;
   }
 
   try {
-    const { error } = await client.from(AUDIT_TABLE).insert([
+    const { data, error } = await client.from(AUDIT_TABLE).insert([
       {
         generated_at: record.generated_at,
         recommendation_type: record.recommendation_type,
@@ -31,11 +31,13 @@ export async function saveAudit(record: AuditRecord): Promise<void> {
         reason: record.reason,
         payload: record.payload ?? {}
       }
-    ]);
+    ]).select("id").single();
 
     if (error) {
       throw new Error(error.message);
     }
+
+    return data?.id ?? null;
   } catch (error) {
     console.error("Error saving audit:", error);
     throw error;

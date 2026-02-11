@@ -3,6 +3,8 @@ import { binancePublic, binanceSigned } from "@/lib/binance/client";
 import { decide } from "@/lib/brain/decision";
 import { getConfig } from "@/lib/config";
 import { saveAudit } from "@/lib/db";
+import { savePerformanceSnapshot, evaluatePendingSnapshots } from "@/lib/db/performance";
+import { sendDailyReport, sendUrgentAlert } from "@/lib/notifications/telegram";
 
 // Verifica autenticación del cron
 function verifyCronAuth(request: Request): boolean {
@@ -58,8 +60,9 @@ export async function POST(request: Request) {
     const output = await decide(cfg, { account, ticker24h, flexible, locked, dual });
 
     // Guardar en auditoría (si está configurada)
+    let auditId: number | null = null;
     try {
-      await saveAudit({
+      auditId = await saveAudit({
         generated_at: output.generated_at,
         recommendation_type: output.recommendation.type,
         asset: output.recommendation.asset,
@@ -70,15 +73,63 @@ export async function POST(request: Request) {
       });
     } catch (auditError) {
       console.error("Error saving audit:", auditError);
-      // No fallar el cron si la auditoría falla
     }
 
-    // Enviar notificación por Telegram (si está configurado)
+    // Performance Tracker: save snapshot & evaluate pending
     try {
-      await sendTelegramNotification(output);
+      if (auditId && output.ai_analysis) {
+        // Get current price of the focus asset
+        const focusAsset = output.recommendation.asset;
+        const tickerArr = Array.isArray(ticker24h) ? ticker24h : [];
+        const assetTicker = tickerArr.find((t: any) =>
+          t.symbol === `${focusAsset}USDT` || t.symbol === `${focusAsset}BUSD`
+        );
+        const currentPrice = assetTicker ? parseFloat(assetTicker.lastPrice || "0") : 0;
+
+        if (currentPrice > 0) {
+          await savePerformanceSnapshot(
+            auditId,
+            focusAsset,
+            output.recommendation.type,
+            currentPrice,
+            output.ai_analysis.prediction.direction,
+            output.ai_analysis.prediction.predictedChangePercent
+          );
+        }
+      }
+
+      // Evaluate past predictions
+      const getPriceFromTicker = async (asset: string): Promise<number> => {
+        const tickerArr = Array.isArray(ticker24h) ? ticker24h : [];
+        const t = tickerArr.find((t: any) => t.symbol === `${asset}USDT`);
+        return t ? parseFloat(t.lastPrice || "0") : 0;
+      };
+      const evaluated = await evaluatePendingSnapshots(getPriceFromTicker);
+      if (evaluated > 0) {
+        console.log(`Performance: evaluated ${evaluated} pending snapshots`);
+      }
+    } catch (perfError) {
+      console.error("Error in performance tracking:", perfError);
+    }
+
+    // Enviar notificación por Telegram (mejorada)
+    try {
+      await sendDailyReport(output);
+
+      // Alerta urgente si hay trampa o crash
+      if (output.ai_analysis?.smartYield?.isTrap) {
+        await sendUrgentAlert(
+          `⛔ TRAMPA DE YIELD DETECTADA en ${output.recommendation.asset}\n${output.ai_analysis.smartYield.reason}`
+        );
+      }
+      if (output.ai_analysis?.prediction?.direction === 'DOWN' &&
+        output.ai_analysis?.prediction?.confidence > 0.7) {
+        await sendUrgentAlert(
+          `📉 ALERTA BAJISTA FUERTE: ${output.portfolio_summary.focus_asset}\nConfianza: ${(output.ai_analysis.prediction.confidence * 100).toFixed(0)}%\nCambio proyectado: ${output.ai_analysis.prediction.predictedChangePercent.toFixed(2)}%`
+        );
+      }
     } catch (telegramError) {
       console.error("Error sending Telegram notification:", telegramError);
-      // No fallar el cron si Telegram falla
     }
 
     return NextResponse.json({ success: true, recommendation: output });
@@ -87,49 +138,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Error en cron daily" }, { status: 500 });
   }
 }
-
-// Función para enviar notificación por Telegram
-async function sendTelegramNotification(output: any) {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-
-  if (!botToken || !chatId) {
-    console.log("Telegram not configured, skipping notification");
-    return;
-  }
-
-  const message = `
-Binance Advisor - Recomendacion Diaria
-
-Fecha: ${new Date(output.generated_at).toLocaleString('es-CL')}
-
-Tipo: ${output.recommendation.type}
-Activo: ${output.recommendation.asset}
-Monto: ${output.recommendation.amount_suggested?.toFixed(2)}
-Duracion: ${output.recommendation.duration_days} dias
-
-Razon: ${output.recommendation.reason}
-
----
-Top Flexible: ${output.topFlexible.map((f: any) => f.asset + ' (' + f.apr?.toFixed(2) + '%)').join(', ')}
-Top Locked: ${output.topLocked?.map((l: any) => l.asset + ' (' + l.apr?.toFixed(2) + '%)').join(', ') || 'N/A'}
-Top Dual: ${output.topDual.map((d: any) => d.base + '/' + d.quote + ' (' + d.apy?.toFixed(2) + '%)').join(', ')}
-  `;
-
-  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: message,
-      parse_mode: "Markdown"
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Telegram API error: ${response.status}`);
-  }
-
-  return await response.json();
-}
-

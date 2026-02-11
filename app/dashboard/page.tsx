@@ -12,6 +12,8 @@ import AdvisorLogic from "./components/AdvisorLogic";
 import AuditTable from "./components/AuditTable";
 import ConfigPanel from "./components/ConfigPanel";
 import AssetSelector from "./components/AssetSelector";
+import PerformanceTracker from "./components/PerformanceTracker";
+import RiskDashboard from "./components/RiskDashboard";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -187,6 +189,8 @@ export default function DashboardPage() {
             )}
 
             <div className="mt-8 space-y-6">
+              <PerformanceTracker />
+              <RiskDashboard />
               <ConfigPanel />
               <AuditTable />
             </div>
@@ -204,6 +208,9 @@ export default function DashboardPage() {
               </p>
             </div>
             <PortfolioTable />
+            <div className="mt-6">
+              <RiskDashboard />
+            </div>
           </>
         )}
 

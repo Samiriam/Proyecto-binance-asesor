@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       }
     });
 
-    const output = decide(cfg, { account, ticker24h, flexible, locked, dual });
+    const output = await decide(cfg, { account, ticker24h, flexible, locked, dual });
     return NextResponse.json(output);
   } catch (error) {
     console.error("Error generating recommendation:", error);

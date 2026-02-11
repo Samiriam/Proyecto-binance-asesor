@@ -73,33 +73,30 @@ export default function DashboardPage() {
           <nav className="flex gap-1">
             <button
               onClick={() => setActiveTab("dashboard")}
-              className={`px-6 py-4 font-medium transition-colors border-b-2 ${
-                activeTab === "dashboard"
+              className={`px-6 py-4 font-medium transition-colors border-b-2 ${activeTab === "dashboard"
                   ? "text-blue-600 border-blue-600 dark:text-blue-400 dark:border-blue-400"
                   : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              }`}
+                }`}
             >
-               Dashboard
+              Dashboard
             </button>
             <button
               onClick={() => setActiveTab("portfolio")}
-              className={`px-6 py-4 font-medium transition-colors border-b-2 ${
-                activeTab === "portfolio"
+              className={`px-6 py-4 font-medium transition-colors border-b-2 ${activeTab === "portfolio"
                   ? "text-blue-600 border-blue-600 dark:text-blue-400 dark:border-blue-400"
                   : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              }`}
+                }`}
             >
-               Portafolio
+              Portafolio
             </button>
             <button
               onClick={() => setActiveTab("logic")}
-              className={`px-6 py-4 font-medium transition-colors border-b-2 ${
-                activeTab === "logic"
+              className={`px-6 py-4 font-medium transition-colors border-b-2 ${activeTab === "logic"
                   ? "text-blue-600 border-blue-600 dark:text-blue-400 dark:border-blue-400"
                   : "text-gray-600 border-transparent hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              }`}
+                }`}
             >
-                Lógica del Asesor
+              Lógica del Asesor
             </button>
           </nav>
         </div>
@@ -157,7 +154,10 @@ export default function DashboardPage() {
             {recommendation && (
               <div className="space-y-6">
                 <PortfolioSummary summary={recommendation.portfolio_summary} />
-                <RecommendationBox recommendation={recommendation.recommendation} />
+                <RecommendationBox
+                  recommendation={recommendation.recommendation}
+                  aiAnalysis={recommendation.ai_analysis}
+                />
                 <FlexibleTop items={recommendation.topFlexible} />
                 <LockedTop items={recommendation.topLocked} />
                 <DualTop items={recommendation.topDual} />

@@ -1,5 +1,6 @@
 import { AdvisorOutput, Recommendation } from "./types";
 import { n, arr, readApr } from "../binance/normalize";
+import { MarketPredictor } from "./ml";
 
 type Cfg = {
   STABLECOINS_WHITELIST: string[];
@@ -9,14 +10,15 @@ type Cfg = {
   VOLATILITY_GUARD_24H: number;   // %
 };
 
-export function decide(cfg: Cfg, inputs: {
+export async function decide(cfg: Cfg, inputs: {
   account: any;
   ticker24h: any[];
   flexible: any;
   locked: any;
   dual: any;
-}): AdvisorOutput {
+}): Promise<AdvisorOutput> {
   const stable = new Set(cfg.STABLECOINS_WHITELIST);
+  const predictor = new MarketPredictor();
 
   // balances
   const balances = arr(inputs.account?.balances);
@@ -97,6 +99,25 @@ export function decide(cfg: Cfg, inputs: {
 
   const currentApr = focusAsset ? (flex.find((x: any) => x.asset === focusAsset)?.apr ?? 0) : 0;
 
+  // AI & Smart Yield Analysis
+  let aiAnalysis = undefined;
+  if (focusAsset) {
+    const pred = await predictor.predictTrend(focusAsset === 'USDT' ? 'BTCUSDT' : `${focusAsset}USDT`);
+    // Si es USDT, analizamos BTC como "referencia de mercado" o simplemente no hay predicción de precio para USDT
+    // Mejor: Si es stablecoin, analizamos su Smart Yield comparado con otras
+
+    // Real Yield Analysis
+    const smartYield = await predictor.analyzeSmartYield(focusAsset, currentApr, stable.has(focusAsset));
+
+    // If focus is stable, we might want market sentiment from BTC to know if we should deploy capitol
+    const marketSentiment = await predictor.predictTrend('BTCUSDT');
+
+    aiAnalysis = {
+      prediction: focusAsset === 'USDT' ? marketSentiment : await predictor.predictTrend(`${focusAsset}USDT`),
+      smartYield
+    };
+  }
+
   let recommendation: Recommendation = {
     type: "NO_ACTION",
     asset: focusAsset,
@@ -105,8 +126,21 @@ export function decide(cfg: Cfg, inputs: {
     reason: "Datos insuficientes o no hay ventaja clara"
   };
   let blockedByVolatility = false;
+  let blockedByAI = false;
 
-  if (focusAsset && focusTotal > 0 && bestStable) {
+  // AI Guard
+  if (aiAnalysis && aiAnalysis.smartYield.isTrap) {
+    recommendation = {
+      type: "NO_ACTION",
+      asset: focusAsset,
+      amount_suggested: 0,
+      duration_days: 1,
+      reason: `⛔ ALERTA IA: Trampa de Yield detectada. ${aiAnalysis.smartYield.reason}`
+    };
+    blockedByAI = true;
+  }
+
+  if (!blockedByAI && focusAsset && focusTotal > 0 && bestStable) {
     const delta = bestStable.apr - currentApr;
 
     // guardia volatilidad para activos no stable
@@ -131,18 +165,31 @@ export function decide(cfg: Cfg, inputs: {
           : `Mejora APR insuficiente (+${delta.toFixed(2)}pp).`
       };
     } else {
-      recommendation = {
-        type: "FLEXIBLE_SWITCH",
-        asset: bestStable.asset,
-        amount_suggested: focusTotal,
-        duration_days: cfg.DEFAULT_DURATION_DAYS,
-        reason: `Switch ${focusAsset} → ${bestStable.asset}. APR +${delta.toFixed(2)}pp (de ${currentApr}% a ${bestStable.apr}%).`
-      };
+      // Check AI for the TARGET asset
+      const targetYield = await predictor.analyzeSmartYield(bestStable.asset, bestStable.apr, true);
+      if (targetYield.isTrap) {
+        recommendation = {
+          type: "FLEXIBLE_STAY",
+          asset: focusAsset,
+          amount_suggested: focusTotal,
+          duration_days: cfg.DEFAULT_DURATION_DAYS,
+          reason: `Mejor APR en ${bestStable.asset} pero IA detecta riesgo/trampa.`
+        };
+      } else {
+        recommendation = {
+          type: "FLEXIBLE_SWITCH",
+          asset: bestStable.asset,
+          amount_suggested: focusTotal,
+          duration_days: cfg.DEFAULT_DURATION_DAYS,
+          reason: `Switch ${focusAsset} → ${bestStable.asset}. APR +${delta.toFixed(2)}pp. AI Risk: ${targetYield.riskScore}.`
+        };
+      }
     }
   }
 
   if (
     !blockedByVolatility &&
+    !blockedByAI &&
     focusAsset &&
     focusTotal > 0 &&
     bestLocked &&
@@ -185,17 +232,25 @@ export function decide(cfg: Cfg, inputs: {
   }));
 
   // regla dual: solo si diferencial >= 3pp y sugerir % pequeño
-  if (!blockedByVolatility && bestDual && (bestDual.apy - bestFlexibleApr) >= 3) {
-    const baseBal = spot.get(bestDual.base)?.total ?? 0;
-    const amt = Math.max(0, baseBal * cfg.MAX_DUAL_PERCENT);
-    if (amt > 0) {
-      recommendation = {
-        type: "DUAL_SUGGEST",
-        asset: bestDual.base,
-        amount_suggested: amt,
-        duration_days: bestDual.duration || cfg.DEFAULT_DURATION_DAYS,
-        reason: `Dual sugerido: APY ${bestDual.apy}% vs Flexible ~${bestFlexibleApr}%. Worst-case: conversión por strike.`
-      };
+  // AI Check: Only Dual if Market Sentiment is NOT Bearish (prediction.direction !== 'DOWN')
+  if (!blockedByVolatility && !blockedByAI && bestDual && (bestDual.apy - bestFlexibleApr) >= 3) {
+    // Check market sentiment for the ASSET being utilized (Base)
+    const sentiment = aiAnalysis?.prediction;
+
+    if (sentiment && sentiment.direction === 'DOWN' && sentiment.confidence > 0.6) {
+      // Skip Dual if market is crashing
+    } else {
+      const baseBal = spot.get(bestDual.base)?.total ?? 0;
+      const amt = Math.max(0, baseBal * cfg.MAX_DUAL_PERCENT);
+      if (amt > 0) {
+        recommendation = {
+          type: "DUAL_SUGGEST",
+          asset: bestDual.base,
+          amount_suggested: amt,
+          duration_days: bestDual.duration || cfg.DEFAULT_DURATION_DAYS,
+          reason: `Dual sugerido: APY ${bestDual.apy}%. AI Sentiment: ${sentiment?.direction ?? 'NEUTRAL'}.`
+        };
+      }
     }
   }
 
@@ -209,6 +264,7 @@ export function decide(cfg: Cfg, inputs: {
     topFlexible: topStableFlex,
     topLocked,
     topDual,
-    recommendation
+    recommendation,
+    ai_analysis: aiAnalysis
   };
 }

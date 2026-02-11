@@ -8,16 +8,16 @@ import { saveAudit } from "@/lib/db";
 function verifyCronAuth(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  
+
   if (!cronSecret) {
     console.warn("CRON_SECRET no configurado");
     return false;
   }
-  
+
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return false;
   }
-  
+
   const token = authHeader.substring(7);
   return token === cronSecret;
 }
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       }
     });
 
-    const output = decide(cfg, { account, ticker24h, flexible, locked, dual });
+    const output = await decide(cfg, { account, ticker24h, flexible, locked, dual });
 
     // Guardar en auditoría (si está configurada)
     try {
@@ -98,7 +98,7 @@ async function sendTelegramNotification(output: any) {
     return;
   }
 
-    const message = `
+  const message = `
 Binance Advisor - Recomendacion Diaria
 
 Fecha: ${new Date(output.generated_at).toLocaleString('es-CL')}

@@ -24,6 +24,19 @@ export type AdvisorOutput = {
   topLocked: Array<{ asset: string; apr: number; duration?: number; reason: string; min?: number; quota?: any }>;
   topDual: Array<{ base: string; quote?: string; apy: number; strike?: number; worst_case: string; reason: string }>;
   recommendation: Recommendation;
+  ai_analysis?: {
+    prediction: {
+      direction: 'UP' | 'DOWN' | 'NEUTRAL';
+      confidence: number;
+      predictedChangePercent: number;
+    };
+    smartYield: {
+      realYield: number;
+      riskScore: number;
+      isTrap: boolean;
+      reason: string;
+    };
+  };
 };
 
 export type FlexibleItem = {

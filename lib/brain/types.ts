@@ -38,6 +38,13 @@ export type AdvisorOutput = {
       riskScore: number;
       isTrap: boolean;
       reason: string;
+      nominalApr: number;
+    };
+    marketSentiment?: {
+      direction: 'UP' | 'DOWN' | 'NEUTRAL';
+      confidence: number;
+      predictedChangePercent: number;
+      volatility: number;
     };
   };
 };
